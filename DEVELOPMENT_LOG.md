@@ -96,3 +96,43 @@ months and `NaN` anomaly values are intentionally left for Phase 4.
 Phase 4 will reindex the data to every month from January 1880 through
 December 2025, interpolate all gaps in time, and calculate the normalization
 statistics.
+
+## 2026-09-22 - Phase 4: Monthly grid and normalization
+
+### Decisions
+
+- Reindex to one row for every month from January 1880 through December 2025.
+- Count missing existing values and completely absent months before filling.
+- Fill every gap with pandas time-based linear interpolation.
+- Calculate `mu_20` from the 1,200 months in 1901-2000.
+- Calculate `mu` and population `sigma` from all 1,752 cleaned months.
+- Calculate `d = x - mu_20` and `z = (x - mu) / sigma`.
+- Calculate annual anomaly and z-score means from all 12 months of each year.
+
+### Results
+
+- Total months: 1,752
+- Absent months added: 65
+- Missing values in existing rows: 125
+- Months imputed: 190
+- `mu_20`: 0.000159 C
+- `mu`: 0.046434 C
+- Population `sigma`: 0.519783 C
+- Total tests passed: 12
+
+### Five warmest years
+
+1. 2024: anomaly 1.167872 C, mean z 2.157510
+2. 2023: anomaly 1.153376 C, mean z 2.129622
+3. 2025: anomaly 1.012637 C, mean z 1.858857
+4. 2016: anomaly 0.981765 C, mean z 1.799464
+5. 2022: anomaly 0.960496 C, mean z 1.758544
+
+The final monthly CSV now has the required columns `date`, `anomaly_c`, and
+`z`. Chart creation remains separate for Phase 5.
+
+### Next phase
+
+Phase 5 will draw the monthly line with segment colors based on `d`, use a
+blue-to-red palette centered at zero, add the reference line and colorbar, and
+export the chart at IEEE column width.

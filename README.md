@@ -11,7 +11,7 @@ development history and cleaning decisions are easy to review.
 - [x] Phase 1: Create the project and preserve the raw data
 - [x] Phase 2: Parse dates, missing values, and swapped fields
 - [x] Phase 3: Sort, remove duplicates, and apply the IQR rule
-- [ ] Phase 4: Build the monthly grid, interpolate, and calculate statistics
+- [x] Phase 4: Build the monthly grid, interpolate, and calculate statistics
 - [ ] Phase 5: Create the dual-encoded temperature chart
 - [ ] Phase 6: Write and compile the one-page IEEE report
 - [ ] Phase 7: Validate the outputs and prepare the submission ZIP
@@ -52,5 +52,8 @@ python3 src/clean.py
 python3 -m unittest discover -s tests -v
 ```
 
-This creates the Phase 2 parsing files and the Phase 3 files
-`outputs/phase3_cleaned.csv` and `outputs/phase3_cleaning_log.txt`.
+This creates the earlier phase files plus:
+
+- `outputs/cleaned_monthly.csv`
+- `outputs/annual_means.csv`
+- `outputs/phase4_statistics_log.txt`

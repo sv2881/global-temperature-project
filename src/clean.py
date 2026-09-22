@@ -38,6 +38,9 @@ MONTH_NUMBERS = {
     "dec": 12,
 }
 
+START_MONTH = pd.Timestamp("1880-01-01")
+END_MONTH = pd.Timestamp("2025-12-01")
+
 def expand_year(text):
     """Convert a two-digit year using the rule given in the assignment."""
     year = int(text)
@@ -260,6 +263,58 @@ def clean_duplicates_and_outliers(data):
     return cleaned, results
 
 
+def complete_monthly_series(data):
+    """Create the full grid, interpolate gaps, and calculate statistics."""
+    full_index = pd.date_range(START_MONTH, END_MONTH, freq="MS")
+    values = data.set_index("date")[["anomaly_c"]]
+
+    absent_months = len(full_index.difference(values.index))
+    missing_in_existing_rows = int(values["anomaly_c"].isna().sum())
+
+    monthly = values.reindex(full_index)
+    monthly.index.name = "date"
+    monthly["was_imputed"] = monthly["anomaly_c"].isna()
+    months_imputed = int(monthly["was_imputed"].sum())
+
+    monthly["anomaly_c"] = monthly["anomaly_c"].interpolate(method="time")
+    if monthly["anomaly_c"].isna().any():
+        raise ValueError("Interpolation left missing monthly values.")
+
+    baseline = monthly.loc["1901-01-01":"2000-12-01", "anomaly_c"]
+    mu20 = float(baseline.mean())
+    mu = float(monthly["anomaly_c"].mean())
+    sigma = float(monthly["anomaly_c"].std(ddof=0))
+
+    monthly["d"] = monthly["anomaly_c"] - mu20
+    monthly["z"] = (monthly["anomaly_c"] - mu) / sigma
+    monthly = monthly.reset_index()
+
+    annual = monthly.copy()
+    annual["year"] = annual["date"].dt.year
+    annual = annual.groupby("year", as_index=False).agg(
+        mean_anomaly_c=("anomaly_c", "mean"),
+        mean_z=("z", "mean"),
+        month_count=("date", "size"),
+    )
+
+    if len(monthly) != 1752 or not annual["month_count"].eq(12).all():
+        raise ValueError("The monthly grid is incomplete.")
+
+    top_five = annual.nlargest(5, "mean_anomaly_c").reset_index(drop=True)
+
+    results = {
+        "total_months": len(monthly),
+        "absent_months_added": absent_months,
+        "missing_in_existing_rows": missing_in_existing_rows,
+        "months_imputed": months_imputed,
+        "mu20": mu20,
+        "mu": mu,
+        "sigma": sigma,
+    }
+
+    return monthly, annual, top_five, results
+
+
 def write_phase2_outputs(data, counts, unparsed_rows, output_dir):
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -316,6 +371,50 @@ def write_phase3_outputs(data, results, output_dir):
     )
 
 
+def write_phase4_outputs(monthly, annual, top_five, results, output_dir):
+    monthly_output = monthly.copy()
+    monthly_output["date"] = monthly_output["date"].dt.strftime("%Y-%m")
+    monthly_output.to_csv(
+        output_dir / "cleaned_monthly.csv",
+        index=False,
+        columns=["date", "anomaly_c", "z"],
+        float_format="%.6f",
+    )
+
+    annual.to_csv(
+        output_dir / "annual_means.csv",
+        index=False,
+        columns=["year", "mean_anomaly_c", "mean_z"],
+        float_format="%.6f",
+    )
+
+    log_lines = [
+        "PHASE 4 MONTHLY GRID AND STATISTICS",
+        "",
+        f"Total months: {results['total_months']}",
+        f"Absent months added: {results['absent_months_added']}",
+        f"Missing values in existing rows: {results['missing_in_existing_rows']}",
+        f"Months imputed: {results['months_imputed']}",
+        "Interpolation method: linear in time",
+        "",
+        f"mu_20 (1901-2000): {results['mu20']:.6f} C",
+        f"mu (1880-2025): {results['mu']:.6f} C",
+        f"sigma (population): {results['sigma']:.6f} C",
+        "",
+        "FIVE WARMEST YEARS",
+    ]
+
+    for rank, row in enumerate(top_five.itertuples(index=False), start=1):
+        log_lines.append(
+            f"{rank}. {row.year}: mean anomaly {row.mean_anomaly_c:.6f} C, "
+            f"mean z {row.mean_z:.6f}"
+        )
+
+    (output_dir / "phase4_statistics_log.txt").write_text(
+        "\n".join(log_lines) + "\n", encoding="utf-8"
+    )
+
+
 def main():
     project_root = Path(__file__).resolve().parents[1]
 
@@ -341,6 +440,8 @@ def main():
     write_phase2_outputs(data, counts, unparsed_rows, args.output_dir)
     cleaned, cleaning_results = clean_duplicates_and_outliers(data)
     write_phase3_outputs(cleaned, cleaning_results, args.output_dir)
+    monthly, annual, top_five, statistics = complete_monthly_series(cleaned)
+    write_phase4_outputs(monthly, annual, top_five, statistics, args.output_dir)
 
     print(f"Parsed rows: {counts['parsed_rows']}")
     print(f"Repaired swaps: {counts['swapped_rows']}")
@@ -357,6 +458,18 @@ def main():
         "Plausible readings removed: "
         f"{cleaning_results['plausible_readings_removed']}"
     )
+    print(f"Months imputed: {statistics['months_imputed']}")
+    print(
+        f"mu_20={statistics['mu20']:.6f}, "
+        f"mu={statistics['mu']:.6f}, "
+        f"sigma={statistics['sigma']:.6f}"
+    )
+    print("Five warmest years:")
+    for row in top_five.itertuples(index=False):
+        print(
+            f"{row.year}: anomaly={row.mean_anomaly_c:.6f}, "
+            f"mean_z={row.mean_z:.6f}"
+        )
 
 
 if __name__ == "__main__":

@@ -1,0 +1,18 @@
+PHASE 4 MONTHLY GRID AND STATISTICS
+
+Total months: 1752
+Absent months added: 65
+Missing values in existing rows: 125
+Months imputed: 190
+Interpolation method: linear in time
+
+mu_20 (1901-2000): 0.000159 C
+mu (1880-2025): 0.046434 C
+sigma (population): 0.519783 C
+
+FIVE WARMEST YEARS
+1. 2024: mean anomaly 1.167872 C, mean z 2.157510
+2. 2023: mean anomaly 1.153376 C, mean z 2.129622
+3. 2025: mean anomaly 1.012637 C, mean z 1.858857
+4. 2016: mean anomaly 0.981765 C, mean z 1.799464
+5. 2022: mean anomaly 0.960496 C, mean z 1.758544
