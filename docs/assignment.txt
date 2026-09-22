@@ -1,0 +1,73 @@
+You are given global_temp_dirty_v2.csv, a monthly global temperature anomaly record covering January 1880 to December 2025. Values are in degrees Celsius and are expressed relative to the 1901–2000 mean.
+The dataset is simulated for teaching. Its long-term shape is modeled on published records, but the values are not official NOAA, NASA GISS, or HadCRUT data and should not be cited as such.
+The file has been deliberately corrupted. Your task is to build a reproducible Python pipeline that cleans it, produces a dual-encoded chart, and reports the results in a one-page IEEE-format paper written in LaTeX.
+Column
+Description
+Date
+Month of observation. Appears in many formats (see 2.2). Day of month, where present, carries no information.
+Temperature_Anomaly
+Monthly global mean anomaly in °C, relative to the 1901–2000 mean.
+Source/Notes
+Informational tags (e.g., sensor_A, NOAA, note: calibration). No action required.
+The list below describes the categories of problems in the file. It does not identify every instance; finding them is part of the assignment.
+- Mixed date formats, for example 188001, 1880/03, 1880.04, 1880-05-01, 11/1880, Jun 1880, Jan-1990, 1908 Sep, Jan-43, and 7/1/07.
+- Two-digit years appear only for 1926 onward. Interpret 26–99 as 19xx and 00–25 as 20xx. Be careful: pandas’ default parser maps 00–68 to 2000–2068, so Jan-43 becomes 2043 unless you handle it.
+- Swapped fields. In some rows the date and the value are in the wrong columns.
+- Inconsistent numeric formatting, including comma decimal separators ("-0,199") and a unit suffix (0.253°C).
+- Missing-value tokens: blank, ., --, NaN, null, NA, N/A, #N/A, n/a, and missing.
+- Sensor-malfunction codes: 500, -500, 999, and -999. These are not physical temperatures.
+- Duplicate rows and rows that are out of chronological order.
+- Absent months: some calendar months have no row at all.
+- File hygiene: column headers contain stray whitespace, and non-data lines appear at the end of the file.
+Complete the steps below in a single Python script or notebook that runs end-to-end on the provided CSV without manual edits. Perform the steps in this order.
+- Read every field as text, strip the header names, and discard non-data lines.
+- Repair rows with swapped fields.
+- Convert every date to a datetime64 value set to the first day of its month.
+- Any row you cannot parse must be listed in your cleaning log, not silently dropped.
+- Convert anomalies to float, handling comma decimals and the °C suffix.
+- Map every missing-value token to NaN.
+- Sort chronologically and keep exactly one record per month.
+Use the IQR method discussed in class on the deduplicated, non-missing values:
+IQR = Q₃ − Q₁,     keep x if  Q₁ − 1.5·IQR ≤ x ≤ Q₃ + 1.5·IQR
+- Set values outside the fences to NaN (they will be imputed in 3.5).
+- Report Q₁, Q₃, both fences, and the number of values removed.
+- Confirm that every ±500 and ±999 code was removed and that no plausible reading was removed.
+- Reindex the series to a complete monthly grid from January 1880 to December 2025.
+- Fill every gap with linear interpolation in time, a step up from the mean imputation covered in class.
+- Report the number of months imputed.
+Compute both quantities below from the cleaned monthly series x:
+d = x − μ₂₀
+where μ₂₀ is the mean of the cleaned series over 1901–2000. Because the file is already on a 1901–2000 baseline, μ₂₀ should be close to 0; report its value as a check on your cleaning. The color channel in 3.8 encodes d.
+z = (x − μ) / σ
+where μ and σ are the mean and standard deviation of the full cleaned series (1880–2025). Report μ and σ.
+- Compute calendar-year means of the cleaned monthly series (imputed months included), and the mean z-score for each year.
+- Identify the five warmest years. After cleaning, every year from 1880 to 2025 has all 12 months.
+Element
+Requirement
+Mark
+A line: x = time, y = temperature anomaly (°C).
+Channel
+Color encodes d using a diverging palette centered at 0 (the 20th-century mean): blue = below average, red = above average. Use a centered normalization, e.g., TwoSlopeNorm(vcenter=0) or symmetric limits, with a colormap such as RdBu_r.
+Required labeling
+Axis labels with units, a colorbar with a label, a horizontal reference line at the baseline, and a title or caption.
+Export
+Vector PDF, or PNG at ≥ 300 dpi, sized for one IEEE column (3.5 in wide) or both columns (7.16 in).
+ 
+Implementation note: a single matplotlib Line2D has only one color. To color the line by value, use matplotlib.collections.LineCollection or an equivalent segment-wise approach. Position and color both encode the anomaly, which is what makes the chart dual-encoded.
+Write a one-page paper in LaTeX using \documentclass[conference]{IEEEtran}. It must compile with pdflatex without errors and include:
+1. Title, author, and a 2–3 sentence introduction.
+2. Data cleaning summary with counts from 3.1–3.5: rows parsed, duplicates removed, IQR fences and outliers removed, and months imputed.
+3. Normalization section that typesets both equations from 3.6 in display-math mode (equation environment or ), defines every symbol, and states the values of μ₂₀, μ, and σ.
+4. Table of the five warmest years built with booktabs (\toprule, \midrule, \bottomrule; no vertical rules), with columns Rank, Year, Mean anomaly (°C), and Mean z, plus a caption.
+5. The chart, included with \includegraphics, with a caption and referenced in the text.
+Minimal equation example:
+\begin{equation}
+  z = \frac{x - \mu}{\sigma}
+\end{equation}
+ 
+Submit one ZIP file named lastname_firstname_temperature.zip containing:
+- report.pdf (one page) and report.tex
+- The figure file referenced by report.tex
+- clean.py or clean.ipynb (with outputs)
+- cleaned_monthly.csv with columns date (YYYY-MM), anomaly_c, and z
+- cleaning_log.txt listing the counts from 3.1–3.5 and any unparsed rows
