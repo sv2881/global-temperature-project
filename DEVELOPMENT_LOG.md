@@ -58,3 +58,41 @@ unchanged here.
 
 Phase 3 will sort the parsed rows, keep one record per month, calculate the IQR
 fences, and replace IQR outliers with `NaN`.
+
+## 2026-09-22 - Phase 3: Duplicates and IQR outliers
+
+### Decisions
+
+- Sort by date and original source line so the choice among duplicates is
+  repeatable.
+- Keep the first record for each month after sorting.
+- Calculate quartiles from the deduplicated, non-missing anomaly values.
+- Use the assignment rule: keep values between
+  `Q1 - 1.5 * IQR` and `Q3 + 1.5 * IQR`.
+- Mark outliers before replacing their anomaly values with `NaN`.
+- Stop with an error if a sensor code remains or a plausible reading is
+  removed.
+
+### Results
+
+- Duplicate rows removed: 20
+- Rows after deduplication: 1,687
+- Q1: -0.385000 C
+- Q3: 0.490000 C
+- IQR: 0.875000 C
+- Lower fence: -1.697500 C
+- Upper fence: 1.802500 C
+- Values removed by IQR: 63
+- Sensor codes removed: 63
+- Sensor codes remaining: 0
+- Plausible readings removed: 0
+- Total tests passed: 8
+
+The data is sorted and has one record per available month. Missing calendar
+months and `NaN` anomaly values are intentionally left for Phase 4.
+
+### Next phase
+
+Phase 4 will reindex the data to every month from January 1880 through
+December 2025, interpolate all gaps in time, and calculate the normalization
+statistics.

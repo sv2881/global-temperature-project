@@ -1,0 +1,13 @@
+PHASE 3 CLEANING LOG
+
+Duplicate rows removed: 20
+Rows after deduplication: 1687
+Q1: -0.385000 C
+Q3: 0.490000 C
+IQR: 0.875000 C
+Lower fence: -1.697500 C
+Upper fence: 1.802500 C
+Values removed by IQR: 63
+Sensor codes removed: 63
+Sensor codes remaining: 0
+Plausible readings removed: 0

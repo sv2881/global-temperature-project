@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Phase 2: parse dates and anomaly values without dropping data rows."""
+"""Parse and clean the simulated global temperature data."""
 
 import argparse
 import csv
@@ -37,7 +37,6 @@ MONTH_NUMBERS = {
     "nov": 11,
     "dec": 12,
 }
-
 
 def expand_year(text):
     """Convert a two-digit year using the rule given in the assignment."""
@@ -206,7 +205,62 @@ def load_and_parse(csv_path):
     return data, counts, unparsed_rows
 
 
-def write_outputs(data, counts, unparsed_rows, output_dir):
+def clean_duplicates_and_outliers(data):
+    """Sort, keep one row per month, and apply the IQR rule."""
+    cleaned = data.sort_values(["date", "source_line"], kind="mergesort").copy()
+
+    duplicates_removed = int(cleaned.duplicated("date").sum())
+    cleaned = cleaned.drop_duplicates("date", keep="first").copy()
+
+    values = cleaned["anomaly_c"]
+    non_missing = values.dropna()
+
+    q1 = float(non_missing.quantile(0.25))
+    q3 = float(non_missing.quantile(0.75))
+    iqr = q3 - q1
+    lower_fence = q1 - 1.5 * iqr
+    upper_fence = q3 + 1.5 * iqr
+
+    outlier_mask = values.notna() & (
+        (values < lower_fence) | (values > upper_fence)
+    )
+    absolute_values = values.abs()
+    sensor_mask = absolute_values.eq(500.0) | absolute_values.eq(999.0)
+
+    sensor_codes_removed = int((outlier_mask & sensor_mask).sum())
+    plausible_readings_removed = int((outlier_mask & ~sensor_mask).sum())
+
+    cleaned["was_outlier"] = outlier_mask
+    cleaned.loc[outlier_mask, "anomaly_c"] = np.nan
+    cleaned = cleaned.reset_index(drop=True)
+
+    remaining_values = cleaned["anomaly_c"].abs()
+    sensor_codes_remaining = int(
+        (remaining_values.eq(500.0) | remaining_values.eq(999.0)).sum()
+    )
+    if sensor_codes_remaining != 0:
+        raise ValueError("A sensor code remained after applying the IQR rule.")
+    if plausible_readings_removed != 0:
+        raise ValueError("The IQR rule removed a plausible temperature reading.")
+
+    results = {
+        "duplicates_removed": duplicates_removed,
+        "rows_after_deduplication": len(cleaned),
+        "q1": q1,
+        "q3": q3,
+        "iqr": iqr,
+        "lower_fence": lower_fence,
+        "upper_fence": upper_fence,
+        "outliers_removed": int(outlier_mask.sum()),
+        "sensor_codes_removed": sensor_codes_removed,
+        "sensor_codes_remaining": sensor_codes_remaining,
+        "plausible_readings_removed": plausible_readings_removed,
+    }
+
+    return cleaned, results
+
+
+def write_phase2_outputs(data, counts, unparsed_rows, output_dir):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     csv_output = data.copy()
@@ -236,6 +290,32 @@ def write_outputs(data, counts, unparsed_rows, output_dir):
     )
 
 
+def write_phase3_outputs(data, results, output_dir):
+    csv_output = data.copy()
+    csv_output["date"] = csv_output["date"].dt.strftime("%Y-%m-%d")
+    csv_output.to_csv(output_dir / "phase3_cleaned.csv", index=False)
+
+    log_lines = [
+        "PHASE 3 CLEANING LOG",
+        "",
+        f"Duplicate rows removed: {results['duplicates_removed']}",
+        f"Rows after deduplication: {results['rows_after_deduplication']}",
+        f"Q1: {results['q1']:.6f} C",
+        f"Q3: {results['q3']:.6f} C",
+        f"IQR: {results['iqr']:.6f} C",
+        f"Lower fence: {results['lower_fence']:.6f} C",
+        f"Upper fence: {results['upper_fence']:.6f} C",
+        f"Values removed by IQR: {results['outliers_removed']}",
+        f"Sensor codes removed: {results['sensor_codes_removed']}",
+        f"Sensor codes remaining: {results['sensor_codes_remaining']}",
+        f"Plausible readings removed: {results['plausible_readings_removed']}",
+    ]
+
+    (output_dir / "phase3_cleaning_log.txt").write_text(
+        "\n".join(log_lines) + "\n", encoding="utf-8"
+    )
+
+
 def main():
     project_root = Path(__file__).resolve().parents[1]
 
@@ -258,12 +338,25 @@ def main():
     if not pd.api.types.is_datetime64_any_dtype(data["date"]):
         raise TypeError("Date parsing did not produce a datetime64 column.")
 
-    write_outputs(data, counts, unparsed_rows, args.output_dir)
+    write_phase2_outputs(data, counts, unparsed_rows, args.output_dir)
+    cleaned, cleaning_results = clean_duplicates_and_outliers(data)
+    write_phase3_outputs(cleaned, cleaning_results, args.output_dir)
 
     print(f"Parsed rows: {counts['parsed_rows']}")
     print(f"Repaired swaps: {counts['swapped_rows']}")
     print(f"Unparsed rows: {counts['unparsed_rows']}")
     print(f"Date dtype: {data['date'].dtype}")
+    print(f"Duplicates removed: {cleaning_results['duplicates_removed']}")
+    print(
+        "IQR fences: "
+        f"[{cleaning_results['lower_fence']:.6f}, "
+        f"{cleaning_results['upper_fence']:.6f}]"
+    )
+    print(f"Outliers removed: {cleaning_results['outliers_removed']}")
+    print(
+        "Plausible readings removed: "
+        f"{cleaning_results['plausible_readings_removed']}"
+    )
 
 
 if __name__ == "__main__":
