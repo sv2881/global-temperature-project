@@ -1,0 +1,11 @@
+PHASE 2 PARSING LOG
+
+CSV records after header: 1711
+Non-data lines discarded: 4
+Data rows parsed: 1707
+Swapped rows repaired: 32
+Unparsed data rows: 0
+Date dtype in memory: datetime64[ns]
+
+UNPARSED ROWS
+None

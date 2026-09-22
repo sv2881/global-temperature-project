@@ -9,7 +9,7 @@ development history and cleaning decisions are easy to review.
 ## Phase plan
 
 - [x] Phase 1: Create the project and preserve the raw data
-- [ ] Phase 2: Parse dates, missing values, and swapped fields
+- [x] Phase 2: Parse dates, missing values, and swapped fields
 - [ ] Phase 3: Sort, remove duplicates, and apply the IQR rule
 - [ ] Phase 4: Build the monthly grid, interpolate, and calculate statistics
 - [ ] Phase 5: Create the dual-encoded temperature chart
@@ -24,6 +24,7 @@ docs/           Assignment text and development notes
 notebooks/      Walkthrough notebook with saved outputs
 outputs/        Cleaned data, logs, chart, and report
 src/            Python cleaning code
+tests/          Small tests for the parsing rules
 ```
 
 ## Source data
@@ -43,3 +44,13 @@ The raw file should not be edited. All cleaning will happen in code.
 Keep the implementation simple enough to explain line by line. Record each
 important cleaning choice in `DEVELOPMENT_LOG.md` and commit one phase at a
 time.
+
+## Run Phase 2
+
+```bash
+python3 src/clean.py
+python3 -m unittest discover -s tests -v
+```
+
+This creates `outputs/phase2_parsed.csv` and
+`outputs/phase2_parsing_log.txt`.
