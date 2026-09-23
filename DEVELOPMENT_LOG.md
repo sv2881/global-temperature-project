@@ -215,4 +215,12 @@ package the required files in the submission ZIP.
 - Packaged script rerun: successful
 - Regenerated CSV and cleaning log: byte-identical
 - Automated tests passed: 17
-- ZIP SHA-256: `4ae337e31f716d6d0c32e9914aea414a83d9bc0b3e7fd632e7b01b3b2ad26a4a`
+- ZIP SHA-256: `28df05ec640ef05a49d566e075eb34bb966ee6a7f1c3d42509fa49eeddde7721`
+
+## 2026-09-23 - Author details
+
+- Added `Siva Srinivas Venigalla` and `sv2881@nyu.edu` as module metadata in
+  `clean.py`.
+- Added `sv2881@nyu.edu` below the author name in the IEEE report.
+- Recompiled the report as one page with no final-pass warnings.
+- Rebuilt and integrity-checked the local submission ZIP.

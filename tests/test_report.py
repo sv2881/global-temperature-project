@@ -13,6 +13,7 @@ class ReportTests(unittest.TestCase):
         source = REPORT_TEX.read_text(encoding="utf-8")
 
         self.assertIn(r"\documentclass[conference]{IEEEtran}", source)
+        self.assertIn("sv2881@nyu.edu", source)
         self.assertEqual(source.count(r"\begin{equation}"), 2)
         self.assertIn(r"\toprule", source)
         self.assertIn(r"\midrule", source)

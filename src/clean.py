@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Parse and clean the simulated global temperature data."""
 
+__author__ = "Siva Srinivas Venigalla"
+__email__ = "sv2881@nyu.edu"
+
 import argparse
 import csv
 import math
