@@ -136,3 +136,29 @@ The final monthly CSV now has the required columns `date`, `anomaly_c`, and
 Phase 5 will draw the monthly line with segment colors based on `d`, use a
 blue-to-red palette centered at zero, add the reference line and colorbar, and
 export the chart at IEEE column width.
+
+## 2026-09-23 - Phase 5: Dual-encoded chart
+
+### Decisions
+
+- Draw one line segment between each pair of monthly observations.
+- Color each segment by the average `d` value of its two endpoints.
+- Use `RdBu_r`, so negative values are blue and positive values are red.
+- Use symmetric color limits with `TwoSlopeNorm` centered at `d = 0`.
+- Draw the 1901-2000 mean as a dashed horizontal reference line.
+- Add axis labels with units, a title, a legend, and a labeled colorbar.
+- Export a vector PDF at the 3.5-inch width of one IEEE column.
+
+### Results
+
+- Monthly observations plotted: 1,752
+- Colored line segments: 1,751
+- Figure size: 3.5 by 2.7 inches
+- Palette: `RdBu_r`
+- Color center: `d = 0`
+- Output: `outputs/temperature_chart.pdf`
+
+### Next phase
+
+Phase 6 will write the one-page IEEEtran report, add the equations and
+booktabs table, include the chart, and compile the final PDF.

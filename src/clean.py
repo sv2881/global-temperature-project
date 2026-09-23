@@ -7,8 +7,16 @@ import math
 import re
 from pathlib import Path
 
+import matplotlib
+
+matplotlib.use("Agg")
+
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.collections import LineCollection
+from matplotlib.colors import TwoSlopeNorm
 
 
 MISSING_VALUES = {
@@ -315,6 +323,87 @@ def complete_monthly_series(data):
     return monthly, annual, top_five, results
 
 
+def build_temperature_chart(monthly, mu20):
+    """Build the dual-encoded monthly temperature chart."""
+    dates = mdates.date2num(monthly["date"])
+    temperatures = monthly["anomaly_c"].to_numpy()
+    differences = monthly["d"].to_numpy()
+
+    points = np.column_stack([dates, temperatures])
+    segments = np.stack([points[:-1], points[1:]], axis=1)
+    segment_differences = (differences[:-1] + differences[1:]) / 2
+
+    color_limit = float(np.abs(differences).max())
+    color_norm = TwoSlopeNorm(
+        vmin=-color_limit,
+        vcenter=0,
+        vmax=color_limit,
+    )
+
+    fig, ax = plt.subplots(figsize=(3.5, 2.7), layout="constrained")
+    colored_line = LineCollection(
+        segments,
+        cmap="RdBu_r",
+        norm=color_norm,
+        linewidth=0.8,
+    )
+    colored_line.set_array(segment_differences)
+    ax.add_collection(colored_line)
+
+    ax.set_xlim(dates.min(), dates.max())
+    y_padding = 0.08 * (temperatures.max() - temperatures.min())
+    ax.set_ylim(temperatures.min() - y_padding, temperatures.max() + y_padding)
+    ax.axhline(
+        mu20,
+        color="black",
+        linestyle="--",
+        linewidth=0.7,
+        label="1901-2000 mean",
+    )
+
+    ax.set_title("Global Temperature Anomaly, 1880-2025", fontsize=8.5)
+    ax.set_xlabel("Year", fontsize=7.5)
+    ax.set_ylabel(r"Temperature anomaly ($^\circ$C)", fontsize=7.5)
+    ax.xaxis.set_major_locator(mdates.YearLocator(30))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+    ax.tick_params(labelsize=6.5)
+    ax.grid(axis="y", color="0.85", linewidth=0.5)
+    ax.legend(loc="upper left", frameon=False, fontsize=6.5)
+
+    colorbar = fig.colorbar(
+        colored_line,
+        ax=ax,
+        orientation="horizontal",
+        pad=0.10,
+        fraction=0.11,
+        aspect=28,
+    )
+    colorbar.set_label(
+        r"Difference from 1901-2000 mean, $d$ ($^\circ$C)",
+        fontsize=7,
+    )
+    colorbar.ax.tick_params(labelsize=6.5)
+
+    return fig, ax, colored_line
+
+
+def write_temperature_chart(monthly, mu20, output_path):
+    """Write the chart as a vector PDF."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig, _, _ = build_temperature_chart(monthly, mu20)
+    fig.savefig(
+        output_path,
+        format="pdf",
+        metadata={
+            "Title": "Global Temperature Anomaly, 1880-2025",
+            "Creator": "Matplotlib",
+            "CreationDate": None,
+            "ModDate": None,
+        },
+    )
+    plt.close(fig)
+
+
 def write_phase2_outputs(data, counts, unparsed_rows, output_dir):
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -442,6 +531,8 @@ def main():
     write_phase3_outputs(cleaned, cleaning_results, args.output_dir)
     monthly, annual, top_five, statistics = complete_monthly_series(cleaned)
     write_phase4_outputs(monthly, annual, top_five, statistics, args.output_dir)
+    chart_path = args.output_dir / "temperature_chart.pdf"
+    write_temperature_chart(monthly, statistics["mu20"], chart_path)
 
     print(f"Parsed rows: {counts['parsed_rows']}")
     print(f"Repaired swaps: {counts['swapped_rows']}")
@@ -470,6 +561,7 @@ def main():
             f"{row.year}: anomaly={row.mean_anomaly_c:.6f}, "
             f"mean_z={row.mean_z:.6f}"
         )
+    print(f"Chart: {chart_path}")
 
 
 if __name__ == "__main__":
