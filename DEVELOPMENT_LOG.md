@@ -162,3 +162,32 @@ export the chart at IEEE column width.
 
 Phase 6 will write the one-page IEEEtran report, add the equations and
 booktabs table, include the chart, and compile the final PDF.
+
+## 2026-09-23 - Phase 6: One-page IEEE report
+
+### Decisions
+
+- Use the conference option of the `IEEEtran` document class.
+- Keep the introduction to three sentences and identify the data as simulated.
+- Report the exact parsing, duplicate, IQR, outlier, and interpolation counts.
+- Put both normalization formulas in numbered display equations.
+- Define every symbol and state `mu_20`, `mu`, and population `sigma`.
+- Round annual means and mean z-scores to three decimals in the table.
+- Use `booktabs` rules with no vertical table lines.
+- Include the Phase 5 vector chart at one-column width.
+
+### Results
+
+- LaTeX source: `outputs/report.tex`
+- Compiled paper: `outputs/report.pdf`
+- Document class: `IEEEtran` conference format
+- Length: one letter-size page
+- `pdflatex` errors: 0
+- Final-pass LaTeX warnings: 0
+- Overfull or underfull boxes: 0
+- Total automated tests: 17
+
+### Next phase
+
+Phase 7 will create the combined cleaning log, run final rubric checks, and
+package the required files in the submission ZIP.

@@ -13,7 +13,7 @@ development history and cleaning decisions are easy to review.
 - [x] Phase 3: Sort, remove duplicates, and apply the IQR rule
 - [x] Phase 4: Build the monthly grid, interpolate, and calculate statistics
 - [x] Phase 5: Create the dual-encoded temperature chart
-- [ ] Phase 6: Write and compile the one-page IEEE report
+- [x] Phase 6: Write and compile the one-page IEEE report
 - [ ] Phase 7: Validate the outputs and prepare the submission ZIP
 
 ## Project layout
@@ -58,3 +58,12 @@ This creates the earlier phase files plus:
 - `outputs/annual_means.csv`
 - `outputs/phase4_statistics_log.txt`
 - `outputs/temperature_chart.pdf`
+- `outputs/report.tex`
+- `outputs/report.pdf`
+
+Compile the report from the output directory:
+
+```bash
+cd outputs
+pdflatex -interaction=nonstopmode -halt-on-error report.tex
+```
