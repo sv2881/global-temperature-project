@@ -4,6 +4,7 @@ __pycache__/
 .venv/
 .ipynb_checkpoints/
 tmp/
+/venigalla_sivasrinivas_temperature.zip
 
 # LaTeX build files
 *.aux

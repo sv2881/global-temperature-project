@@ -504,20 +504,80 @@ def write_phase4_outputs(monthly, annual, top_five, results, output_dir):
     )
 
 
+def write_cleaning_log(
+    counts,
+    unparsed_rows,
+    cleaning_results,
+    statistics,
+    output_dir,
+):
+    """Write one final log containing the required cleaning counts."""
+    log_lines = [
+        "GLOBAL TEMPERATURE CLEANING LOG",
+        "",
+        "PARSING",
+        f"CSV records after header: {counts['source_records']}",
+        f"Non-data lines discarded: {counts['non_data_lines']}",
+        f"Data rows parsed: {counts['parsed_rows']}",
+        f"Swapped rows repaired: {counts['swapped_rows']}",
+        f"Unparsed data rows: {counts['unparsed_rows']}",
+        "",
+        "DUPLICATES AND IQR OUTLIERS",
+        f"Duplicate rows removed: {cleaning_results['duplicates_removed']}",
+        f"Rows after deduplication: {cleaning_results['rows_after_deduplication']}",
+        f"Q1: {cleaning_results['q1']:.6f} C",
+        f"Q3: {cleaning_results['q3']:.6f} C",
+        f"IQR: {cleaning_results['iqr']:.6f} C",
+        f"Lower fence: {cleaning_results['lower_fence']:.6f} C",
+        f"Upper fence: {cleaning_results['upper_fence']:.6f} C",
+        f"Values removed by IQR: {cleaning_results['outliers_removed']}",
+        f"Sensor codes removed: {cleaning_results['sensor_codes_removed']}",
+        f"Sensor codes remaining: {cleaning_results['sensor_codes_remaining']}",
+        "Plausible readings removed: "
+        f"{cleaning_results['plausible_readings_removed']}",
+        "",
+        "MONTHLY GRID AND INTERPOLATION",
+        f"Total months: {statistics['total_months']}",
+        f"Absent months added: {statistics['absent_months_added']}",
+        "Missing values in existing rows: "
+        f"{statistics['missing_in_existing_rows']}",
+        f"Months imputed: {statistics['months_imputed']}",
+        "Interpolation method: linear in time",
+        "",
+        "UNPARSED ROWS",
+    ]
+
+    if unparsed_rows:
+        log_lines.extend(unparsed_rows)
+    else:
+        log_lines.append("None")
+
+    log_path = output_dir / "cleaning_log.txt"
+    log_path.write_text("\n".join(log_lines) + "\n", encoding="utf-8")
+    return log_path
+
+
 def main():
-    project_root = Path(__file__).resolve().parents[1]
+    script_dir = Path(__file__).resolve().parent
+    if script_dir.name == "src":
+        project_root = script_dir.parent
+        default_input = project_root / "data" / "raw" / "global_temp_dirty_v2.csv"
+        default_output = project_root / "outputs"
+    else:
+        default_input = script_dir / "global_temp_dirty_v2.csv"
+        default_output = script_dir
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "input_csv",
         nargs="?",
         type=Path,
-        default=project_root / "data" / "raw" / "global_temp_dirty_v2.csv",
+        default=default_input,
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=project_root / "outputs",
+        default=default_output,
     )
     args = parser.parse_args()
 
@@ -531,6 +591,13 @@ def main():
     write_phase3_outputs(cleaned, cleaning_results, args.output_dir)
     monthly, annual, top_five, statistics = complete_monthly_series(cleaned)
     write_phase4_outputs(monthly, annual, top_five, statistics, args.output_dir)
+    cleaning_log_path = write_cleaning_log(
+        counts,
+        unparsed_rows,
+        cleaning_results,
+        statistics,
+        args.output_dir,
+    )
     chart_path = args.output_dir / "temperature_chart.pdf"
     write_temperature_chart(monthly, statistics["mu20"], chart_path)
 
@@ -562,6 +629,7 @@ def main():
             f"mean_z={row.mean_z:.6f}"
         )
     print(f"Chart: {chart_path}")
+    print(f"Cleaning log: {cleaning_log_path}")
 
 
 if __name__ == "__main__":

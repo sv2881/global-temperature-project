@@ -14,7 +14,7 @@ development history and cleaning decisions are easy to review.
 - [x] Phase 4: Build the monthly grid, interpolate, and calculate statistics
 - [x] Phase 5: Create the dual-encoded temperature chart
 - [x] Phase 6: Write and compile the one-page IEEE report
-- [ ] Phase 7: Validate the outputs and prepare the submission ZIP
+- [x] Phase 7: Validate the outputs and prepare the submission ZIP
 
 ## Project layout
 
@@ -57,6 +57,7 @@ This creates the earlier phase files plus:
 - `outputs/cleaned_monthly.csv`
 - `outputs/annual_means.csv`
 - `outputs/phase4_statistics_log.txt`
+- `outputs/cleaning_log.txt`
 - `outputs/temperature_chart.pdf`
 - `outputs/report.tex`
 - `outputs/report.pdf`
@@ -66,4 +67,25 @@ Compile the report from the output directory:
 ```bash
 cd outputs
 pdflatex -interaction=nonstopmode -halt-on-error report.tex
+```
+
+## Submission ZIP
+
+The local submission is `venigalla_sivasrinivas_temperature.zip`. It contains
+only the six required files at the archive root:
+
+- `report.pdf`
+- `report.tex`
+- `temperature_chart.pdf`
+- `clean.py`
+- `cleaned_monthly.csv`
+- `cleaning_log.txt`
+
+The ZIP is kept local and ignored by Git. Recreate it from the project root
+with:
+
+```bash
+zip -j -X venigalla_sivasrinivas_temperature.zip \
+  outputs/report.pdf outputs/report.tex outputs/temperature_chart.pdf \
+  src/clean.py outputs/cleaned_monthly.csv outputs/cleaning_log.txt
 ```

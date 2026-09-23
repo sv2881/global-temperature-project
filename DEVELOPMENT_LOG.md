@@ -191,3 +191,28 @@ booktabs table, include the chart, and compile the final PDF.
 
 Phase 7 will create the combined cleaning log, run final rubric checks, and
 package the required files in the submission ZIP.
+
+## 2026-09-23 - Phase 7: Validation and submission ZIP
+
+### Decisions
+
+- Generate the final `cleaning_log.txt` from `clean.py` on every run.
+- Keep all six submission files at the root of the ZIP.
+- Make the packaged script write beside itself when it is outside `src`.
+- Keep the submission ZIP local instead of committing the duplicate binary.
+- Preserve the older ZIP in `Downloads` and place this fresh ZIP in the new
+  project folder.
+
+### Results
+
+- ZIP name: `venigalla_sivasrinivas_temperature.zip`
+- Required files in ZIP: 6 of 6
+- ZIP integrity errors: 0
+- Cleaned monthly rows: 1,752
+- Cleaned CSV columns: `date`, `anomaly_c`, `z`
+- Packaged report pages: 1
+- Packaged LaTeX errors or final-pass warnings: 0
+- Packaged script rerun: successful
+- Regenerated CSV and cleaning log: byte-identical
+- Automated tests passed: 17
+- ZIP SHA-256: `4ae337e31f716d6d0c32e9914aea414a83d9bc0b3e7fd632e7b01b3b2ad26a4a`
